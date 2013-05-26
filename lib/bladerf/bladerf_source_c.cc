@@ -41,7 +41,7 @@ using namespace boost::assign;
  * Create a new instance of bladerf_source_c and return
  * a boost shared_ptr.  This is effectively the public constructor.
  */
-bladerf_source_c_sptr bladerf_make_source_c (const std::string &args)
+bladerf_source_c_sptr make_bladerf_source_c (const std::string &args)
 {
   return gnuradio::get_initial_sptr(new bladerf_source_c (args));
 }

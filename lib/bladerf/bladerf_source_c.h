@@ -48,7 +48,7 @@ typedef boost::shared_ptr<bladerf_source_c> bladerf_source_c_sptr;
  * constructor is private.  bladerf_make_source_c is the public
  * interface for creating new instances.
  */
-bladerf_source_c_sptr bladerf_make_source_c (const std::string & args = "");
+bladerf_source_c_sptr make_bladerf_source_c (const std::string & args = "");
 
 /*!
  * \brief Provides a stream of complex samples.
@@ -63,7 +63,7 @@ class bladerf_source_c :
 private:
   // The friend declaration allows bladerf_make_source_c to
   // access the private constructor.
-  friend bladerf_source_c_sptr bladerf_make_source_c (const std::string & args);
+  friend bladerf_source_c_sptr make_bladerf_source_c (const std::string & args);
 
   /*!
    * \brief Provides a stream of complex samples.

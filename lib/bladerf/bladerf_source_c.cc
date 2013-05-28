@@ -47,13 +47,27 @@ bladerf_source_c_sptr make_bladerf_source_c (const std::string &args)
 }
 
 /*
+ * Specify constraints on number of input and output streams.
+ * This info is used to construct the input and output signatures
+ * (2nd & 3rd args to gr_block's constructor).  The input and
+ * output signatures are used by the runtime system to
+ * check that a valid number and type of inputs and outputs
+ * are connected to this block.  In this case, we accept
+ * only 0 input and 1 output.
+ */
+static const int MIN_IN = 0;	// mininum number of input streams
+static const int MAX_IN = 0;	// maximum number of input streams
+static const int MIN_OUT = 1;	// minimum number of output streams
+static const int MAX_OUT = 1;	// maximum number of output streams
+
+/*
  * The private constructor
  */
 // TODO
 bladerf_source_c::bladerf_source_c (const std::string &args)
   : gr_sync_block ("bladerf_source_c",
-        gr_make_io_signature (0, 0, sizeof (gr_complex)),
-        args_to_io_signature(args))
+        gr_make_io_signature (MIN_IN, MAX_IN, sizeof (gr_complex)),
+        gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
 {
   std::cout << "Hello world, from bladeRF source!" << std::endl;
 }
@@ -85,7 +99,6 @@ std::vector<std::string> bladerf_source_c::get_devices()
   return devices;
 }
 
-// TODO
 size_t bladerf_source_c::get_num_channels()
 {
   return 1;

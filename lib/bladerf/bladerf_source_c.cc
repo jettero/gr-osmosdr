@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2013 Jon Szymaniak <jon.szymaniak+gpg@gmail.com>
+ * Copyright 2013 Nuand
  * This file shamelessly borrow significant portions from the rtl, osmosdr,
  * uhd, etc. code by Dimitri Stolnikov <horiz0n@gmx.net>
  *

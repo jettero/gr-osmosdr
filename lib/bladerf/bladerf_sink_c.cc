@@ -33,6 +33,7 @@
 #include <boost/assign.hpp>
 #include <gnuradio/gr_io_signature.h>
 #include "bladerf_sink_c.h"
+#include <stdio.h>
 
 using namespace boost::assign;
 
@@ -83,7 +84,7 @@ int bladerf_sink_c::work( int noutput_items,
                          gr_vector_void_star &output_items )
 {
   const gr_complex *in = (const gr_complex *) input_items[0];
-  return 0;
+  return noutput_items ;
 }
 
 // TODO
@@ -116,6 +117,7 @@ osmosdr::meta_range_t bladerf_sink_c::get_sample_rates()
 // TODO
 double bladerf_sink_c::set_sample_rate(double rate)
 {
+  printf( "bladeRF: set_sample_rate( %f )\n", rate ) ;
   return get_sample_rate();
 }
 
@@ -138,6 +140,7 @@ osmosdr::freq_range_t bladerf_sink_c::get_freq_range( size_t chan )
 // TODO
 double bladerf_sink_c::set_center_freq( double freq, size_t chan )
 {
+  printf( "bladeRF: set_center_freq( %f )\n", freq ) ;
   return 0;
 }
 
@@ -150,6 +153,7 @@ double bladerf_sink_c::get_center_freq( size_t chan )
 // TODO
 double bladerf_sink_c::set_freq_corr( double ppm, size_t chan )
 {
+  printf( "bladeRF: set_freq_corr( %f )\n", ppm ) ;
   return get_freq_corr( chan );
 }
 
@@ -185,6 +189,7 @@ osmosdr::gain_range_t bladerf_sink_c::get_gain_range( const std::string & name, 
 // TODO
 bool bladerf_sink_c::set_gain_mode( bool automatic, size_t chan )
 {
+  printf( "bladeRF: set_gain_mode()\n" ) ;
   return get_gain_mode(chan);
 }
 
@@ -197,12 +202,14 @@ bool bladerf_sink_c::get_gain_mode( size_t chan )
 // TODO
 double bladerf_sink_c::set_gain( double gain, size_t chan )
 {
+  printf( "bladeRF: set_gain( %f )\n", gain ) ;
   return 0;
 }
 
 // TODO
 double bladerf_sink_c::set_gain( double gain, const std::string & name, size_t chan)
 {
+  printf( "bladeRF: set_gain( %f, %s )\n", gain, name.c_str() ) ;
   return 0;
 }
 
@@ -221,12 +228,14 @@ double bladerf_sink_c::get_gain( const std::string & name, size_t chan )
 // TODO
 double bladerf_sink_c::set_if_gain( double gain, size_t chan )
 {
+  printf( "bladeRF: set_if_gain( %f )\n", gain ) ;
   return gain;
 }
 
 // TODO
 double bladerf_sink_c::set_bb_gain(double gain, size_t chan)
 {
+  printf( "bladeRF: set_bb_gain( %f )\n", gain ) ;
   return 0;
 }
 
@@ -243,6 +252,7 @@ std::vector< std::string > bladerf_sink_c::get_antennas( size_t chan )
 // TODO
 std::string bladerf_sink_c::set_antenna( const std::string & antenna, size_t chan )
 {
+  printf( "bladeRF: set_antenna( %s )\n", antenna.c_str() ) ;
   return get_antenna( chan );
 }
 
@@ -255,6 +265,7 @@ std::string bladerf_sink_c::get_antenna( size_t chan )
 // TODO
 double bladerf_sink_c::set_bandwidth( double bandwidth, size_t chan )
 {
+  printf( "bladeRF: set_bandwidth( %f )\n", bandwidth ) ;
   return bandwidth;
 }
 

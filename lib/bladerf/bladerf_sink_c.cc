@@ -30,10 +30,11 @@
 #endif
 
 #include <iostream>
+#include <stdio.h>
 #include <boost/assign.hpp>
 #include <gnuradio/gr_io_signature.h>
+#include <bladerf.h>
 #include "bladerf_sink_c.h"
-#include <stdio.h>
 
 using namespace boost::assign;
 
@@ -55,8 +56,8 @@ bladerf_sink_c_sptr make_bladerf_sink_c (const std::string & args)
  * are connected to this block.  In this case, we accept
  * only 0 input and 1 output.
  */
-static const int MIN_IN = 1;  // mininum number of input streams
-static const int MAX_IN = 1;  // maximum number of input streams
+static const int MIN_IN = 1;   // mininum number of input streams
+static const int MAX_IN = 1;   // maximum number of input streams
 static const int MIN_OUT = 0;  // minimum number of output streams
 static const int MAX_OUT = 0;  // maximum number of output streams
 
@@ -90,11 +91,7 @@ int bladerf_sink_c::work( int noutput_items,
 // TODO
 std::vector<std::string> bladerf_sink_c::get_devices()
 {
-  std::vector<std::string> devices;
-  std::string args = "bladerf=0, label='nuand bladeRF'";
-  devices.push_back(args);
-
-  return devices;
+  return bladerf_common::devices();
 }
 
 // TODO

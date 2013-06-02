@@ -24,6 +24,7 @@
 
 #include <gr_sync_block.h>
 #include "osmosdr_src_iface.h"
+#include "bladerf_common.h"
 
 class bladerf_source_c;
 typedef struct bladerf_dev bladerf_dev_t;
@@ -58,7 +59,8 @@ bladerf_source_c_sptr make_bladerf_source_c (const std::string & args = "");
  */
 class bladerf_source_c :
     public gr_sync_block,
-    public osmosdr_src_iface
+    public osmosdr_src_iface,
+    protected bladerf_common
 {
 private:
   // The friend declaration allows bladerf_make_source_c to

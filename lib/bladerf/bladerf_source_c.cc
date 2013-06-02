@@ -92,11 +92,7 @@ int bladerf_source_c::work( int noutput_items,
 // TODO
 std::vector<std::string> bladerf_source_c::get_devices()
 {
-  std::vector<std::string> devices;
-  std::string args = "bladerf=0, label='nuand bladeRF'";
-  devices.push_back(args);
-
-  return devices;
+  return bladerf_common::devices();
 }
 
 size_t bladerf_source_c::get_num_channels()

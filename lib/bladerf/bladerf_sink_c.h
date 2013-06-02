@@ -24,6 +24,7 @@
 
 #include <gnuradio/gr_sync_block.h>
 #include "osmosdr_snk_iface.h"
+#include "bladerf_common.h"
 
 class bladerf_sink_c;
 
@@ -51,7 +52,8 @@ bladerf_sink_c_sptr make_bladerf_sink_c (const std::string & args = "");
 
 class bladerf_sink_c :
     public gr_sync_block,
-    public osmosdr_snk_iface
+    public osmosdr_snk_iface,
+    protected bladerf_common
 {
 private:
   // The friend declaration allows bladerf_make_sink_c to

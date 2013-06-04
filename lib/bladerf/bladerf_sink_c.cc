@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <boost/assign.hpp>
 #include <gnuradio/gr_io_signature.h>
-#include <bladerf.h>
+#include <libbladeRF.h>
 #include "bladerf_sink_c.h"
 
 using namespace boost::assign;

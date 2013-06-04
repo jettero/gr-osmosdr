@@ -125,7 +125,7 @@ endif(ENABLE_HACKRF)
 ########################################################################
 # Setup bladeRF component
 ########################################################################
-GR_REGISTER_COMPONENT("nuand bladeRF" ENABLE_BLADERF)
+GR_REGISTER_COMPONENT("nuand bladeRF" ENABLE_BLADERF LIBBLADERF_FOUND)
 if(ENABLE_BLADERF)
 GR_INCLUDE_SUBDIRECTORY(bladerf)
 endif(ENABLE_BLADERF)

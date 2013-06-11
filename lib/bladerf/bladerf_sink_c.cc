@@ -70,7 +70,32 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
         gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
 {
   std::cout << "Hello world, from bladeRF sink!" << std::endl;
+
+  /* Set the output multiple to be called */
   this->set_output_multiple(4096);
+
+  /* Open a device the device */
+  this->dev = bladerf_open_any( ) ;
+  if( !this->dev ) {
+    std::runtime_error( std::string(__FUNCTION__) + " failed to open a device - any device!" ) ;
+  }
+
+  /* Set the sample range */
+  this->sample_range = osmosdr::meta_range_t( 160e3, 40e6 ) ;
+
+  /* Set the range of VGA1 */
+  /* NOTE: This range is actually NEGATIVE but apparently you can't set negative gains*/
+  this->vga1_range = osmosdr::gain_range_t( 4, 35 ) ;
+
+  /* Set the range of VGA2 */
+  this->vga2_range = osmosdr::gain_range_t( 0, 25 ) ;
+
+  /* Set the frequency range */
+  this->freq_range = osmosdr::freq_range_t( 300e6, 3.8e9 ) ;
+
+  /* Set the bandwidth range */
+  this->bandwidths = osmosdr::freq_range_t( 1.5e6, 28e6 ) ;
+
 }
 
 /*
@@ -78,76 +103,112 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
  */
 bladerf_sink_c::~bladerf_sink_c ()
 {
+  /* Close the device */
+  bladerf_close( this->dev ) ;
 }
 
-// TODO
 int bladerf_sink_c::work( int noutput_items,
                          gr_vector_const_void_star &input_items,
                          gr_vector_void_star &output_items )
 {
   const gr_complex *in = (const gr_complex *) input_items[0];
+  if( noutput_items < 1024 ) {
+    std::cout << "Refusing to consume <1024: " << noutput_items << std::endl ;
+    return 0 ;
+  }
   /* Consume all the output items */
-  std::cout << "Consumed: " << noutput_items << " items" << std::endl ;
+  //std::cout << "Consumed: " << noutput_items << " items" << std::endl ;
   return noutput_items ;
 }
 
-// TODO
 std::vector<std::string> bladerf_sink_c::get_devices()
 {
   return bladerf_common::devices();
 }
 
-// TODO
 size_t bladerf_sink_c::get_num_channels()
 {
+  /* Only one channel per bladeRF */
   return 1;
 }
 
-// TODO
 osmosdr::meta_range_t bladerf_sink_c::get_sample_rates()
 {
-  osmosdr::meta_range_t range;
-
-  range += osmosdr::range_t( 160e3 ); /* 160kHz lower bound on sample rate */
-  range += osmosdr::range_t( 40e6 ); /* 40MHz upper bound on sample rate */
-
-  return range;
+  return this->sample_range ;
 }
 
-// TODO
 double bladerf_sink_c::set_sample_rate(double rate)
 {
+  if( this->dev ) {
+    if( (uint32_t)rate == rate ) {
+      /* Integer sample rate */
+      int ret ;
+      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate ) ;
+      if( ret ) {
+        throw std::runtime_error( std::string(__FUNCTION__) + " failed to set sample rate" ) ;
+      }
+    } else {
+      /* TODO: Fractional sample rate */
+      int ret ;
+      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate ) ;
+      if( ret ) {
+        throw std::runtime_error( std::string(__FUNCTION__) + " failed to set fractional sample rate" ) ;
+      }
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
+  }
   printf( "bladeRF: set_sample_rate( %f )\n", rate ) ;
   return get_sample_rate();
 }
 
-// TODO
 double bladerf_sink_c::get_sample_rate()
 {
-  return 0;
+  uint32_t rate ;
+  if( this->dev ) {
+    int ret ;
+    ret = bladerf_get_sample_rate( this->dev, RX, &rate ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " failed to get sample rate" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
+  }
+  return (double)rate;
 }
 
-// TODO
 osmosdr::freq_range_t bladerf_sink_c::get_freq_range( size_t chan )
 {
-  osmosdr::freq_range_t range;
-
-  range += osmosdr::range_t( 30e6, 6e9 );
-
-  return range;
+  return this->freq_range ;
 }
 
-// TODO
 double bladerf_sink_c::set_center_freq( double freq, size_t chan )
 {
-  printf( "bladeRF: set_center_freq( %f )\n", freq ) ;
-  return 0;
+  if( this->dev ) {
+    int ret ;
+    ret = bladerf_set_frequency( this->dev, TX, (uint32_t)freq ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " failed to set center frequency" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
+  }
+  return this->get_center_freq() ;
 }
 
-// TODO
 double bladerf_sink_c::get_center_freq( size_t chan )
 {
-  return 0;;
+  uint32_t freq ;
+  if( this->dev ) {
+    int ret ;
+    ret = bladerf_get_frequency( this->dev, TX, &freq ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " failed to get center frequency" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
+  }
+  return (double)freq ;
 }
 
 // TODO
@@ -163,7 +224,6 @@ double bladerf_sink_c::get_freq_corr( size_t chan )
   return 0;
 }
 
-// TODO
 std::vector<std::string> bladerf_sink_c::get_gain_names( size_t chan )
 {
   std::vector< std::string > names;
@@ -174,72 +234,103 @@ std::vector<std::string> bladerf_sink_c::get_gain_names( size_t chan )
   return names;
 }
 
-// TODO
+// TODO: Make sure this applies to VGA2?
 osmosdr::gain_range_t bladerf_sink_c::get_gain_range( size_t chan )
 {
-  return get_gain_range( "RF", chan );
+  return get_gain_range( "VGA2", chan );
 }
 
-// TODO
 osmosdr::gain_range_t bladerf_sink_c::get_gain_range( const std::string & name, size_t chan )
-{
-  return osmosdr::gain_range_t();
+{ 
+  if( name == "VGA1" ) {
+    return this->vga1_range ;
+  } else if( name == "VGA2" ) {
+    return this->vga2_range ;
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " gain range asked for unknown gain stage " + name ) ;
+  }
 }
 
 // TODO
 bool bladerf_sink_c::set_gain_mode( bool automatic, size_t chan )
 {
-  printf( "bladeRF: set_gain_mode()\n" ) ;
-  return get_gain_mode(chan);
+  return false;
 }
 
 // TODO
 bool bladerf_sink_c::get_gain_mode( size_t chan )
 {
-  return 0;
+  return false;
 }
 
-// TODO
+// TODO: Make sure this applies to VGA2?
 double bladerf_sink_c::set_gain( double gain, size_t chan )
 {
-  printf( "bladeRF: set_gain( %f )\n", gain ) ;
-  return 0;
+  return this->set_gain( gain, "VGA2" ) ;
 }
 
-// TODO
 double bladerf_sink_c::set_gain( double gain, const std::string & name, size_t chan)
 {
-  printf( "bladeRF: set_gain( %f, %s )\n", gain, name.c_str() ) ;
-  return 0;
+  if( this->dev ) {
+    int ret ;
+    if( name == "VGA1" ) {
+      ret = bladerf_set_txvga1( this->dev, -(int)gain ) ;
+    } else if( name == "VGA2" ) {
+      ret = bladerf_set_txvga2( this->dev, (int)gain ) ;
+    } else {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not set gain for unknown gain stage " + name ) ;
+    }
+    /* Check for errors */
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not set gain setting due to driver issue" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure to get gain due to device not being open" ) ;
+  }
+  return this->get_gain( name ) ;
 }
 
-// TODO
+// TODO: Make this is applies to VGA2?
 double bladerf_sink_c::get_gain( size_t chan )
 {
-  return 0;
+  return this->get_gain( "VGA2" ) ;
 }
 
-// TODO
 double bladerf_sink_c::get_gain( const std::string & name, size_t chan )
 {
-  return get_gain( chan );
+  int gain ;
+  int ret ;
+  if( this->dev ) {
+    if( name == "VGA1" ) {
+      ret = bladerf_get_txvga2( this->dev, &gain ) ;
+    } else if( name == "VGA2" ) {
+      ret = bladerf_get_txvga1( this->dev, &gain ) ;
+    } else {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not get gain setting for unknown gain stage " + name ) ;
+    }
+    /* Check for errors */
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not get gain setting for " + name ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
+  } 
+  return (double)gain ;
 }
 
-// TODO
+// TODO: Make sure this applies to VGA2
 double bladerf_sink_c::set_if_gain( double gain, size_t chan )
 {
-  printf( "bladeRF: set_if_gain( %f )\n", gain ) ;
-  return gain;
+  return this->set_gain( gain, "VGA2" ) ;
 }
 
-// TODO
+// TODO: Make sure this applies to VGA1
 double bladerf_sink_c::set_bb_gain(double gain, size_t chan)
 {
-  printf( "bladeRF: set_bb_gain( %f )\n", gain ) ;
-  return 0;
+  return this->set_gain( gain, "VGA1" ) ;
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::vector< std::string > bladerf_sink_c::get_antennas( size_t chan )
 {
   std::vector< std::string > antennas;
@@ -249,35 +340,52 @@ std::vector< std::string > bladerf_sink_c::get_antennas( size_t chan )
   return antennas;
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::string bladerf_sink_c::set_antenna( const std::string & antenna, size_t chan )
 {
   printf( "bladeRF: set_antenna( %s )\n", antenna.c_str() ) ;
   return get_antenna( chan );
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::string bladerf_sink_c::get_antenna( size_t chan )
 {
   return "TX";
 }
 
-// TODO
 double bladerf_sink_c::set_bandwidth( double bandwidth, size_t chan )
 {
-  printf( "bladeRF: set_bandwidth( %f )\n", bandwidth ) ;
-  return bandwidth;
+  if( this->dev ) {
+    int ret ;
+    uint32_t actual ;
+    
+    ret = bladerf_set_bandwidth( this->dev, TX, (uint32_t)bandwidth, &actual ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not get bandwidth due to driver error" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure to set bandwidth due to device not being open" ) ;
+  }
+  return this->get_bandwidth() ;
 }
 
-// TODO
 double bladerf_sink_c::get_bandwidth( size_t chan )
 {
-  return 0;
+  uint32_t bw ;
+  if( this->dev ) {
+    int ret ;
+
+    ret = bladerf_get_bandwidth( this->dev, TX, &bw ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " could not get bandwidth due to driver error" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failure to get bandwidth due to device not being open" ) ;
+  }
+  return (double)bw;
 }
 
-// TODO
 osmosdr::freq_range_t bladerf_sink_c::get_bandwidth_range( size_t chan )
 {
-  osmosdr::freq_range_t bandwidths;
-  return bandwidths;
+  return this->bandwidths;
 }

@@ -26,6 +26,8 @@
 #include "osmosdr_snk_iface.h"
 #include "bladerf_common.h"
 
+#include <libbladeRF.h>
+
 class bladerf_sink_c;
 
 /*
@@ -105,6 +107,14 @@ public:
   osmosdr::freq_range_t get_bandwidth_range( size_t chan = 0 );
 
 private:
+
+  bladerf *dev ;
+  osmosdr::meta_range_t sample_range ;
+  osmosdr::gain_range_t vga1_range ;
+  osmosdr::gain_range_t vga2_range ;
+  osmosdr::freq_range_t freq_range ;
+  osmosdr::freq_range_t bandwidths ;
+
 };
 
 #endif /* INCLUDED_BLADERF_SINK_C_H */

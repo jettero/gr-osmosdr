@@ -70,6 +70,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
         gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
 {
   std::cout << "Hello world, from bladeRF sink!" << std::endl;
+  this->set_output_multiple(4096);
 }
 
 /*
@@ -85,6 +86,8 @@ int bladerf_sink_c::work( int noutput_items,
                          gr_vector_void_star &output_items )
 {
   const gr_complex *in = (const gr_complex *) input_items[0];
+  /* Consume all the output items */
+  std::cout << "Consumed: " << noutput_items << " items" << std::endl ;
   return noutput_items ;
 }
 
@@ -105,8 +108,8 @@ osmosdr::meta_range_t bladerf_sink_c::get_sample_rates()
 {
   osmosdr::meta_range_t range;
 
-  range += osmosdr::range_t( 5e6 ); /* out of spec but appears to work */
-  range += osmosdr::range_t( 20e6 ); /* confirmed to work on fast machines */
+  range += osmosdr::range_t( 160e3 ); /* 160kHz lower bound on sample rate */
+  range += osmosdr::range_t( 40e6 ); /* 40MHz upper bound on sample rate */
 
   return range;
 }

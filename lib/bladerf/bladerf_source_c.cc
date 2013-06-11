@@ -64,29 +64,62 @@ static const int MAX_OUT = 1;	// maximum number of output streams
 /*
  * The private constructor
  */
-// TODO
 bladerf_source_c::bladerf_source_c (const std::string &args)
   : gr_sync_block ("bladerf_source_c",
         gr_make_io_signature (MIN_IN, MAX_IN, sizeof (gr_complex)),
         gr_make_io_signature (MIN_OUT, MAX_OUT, sizeof (gr_complex)))
 {
   std::cout << "Hello world, from bladeRF source!" << std::endl;
+
+  /* Setup our sample rates */
+  this->sample_range = osmosdr::meta_range_t( 160e3, 40e6 ) ;
+
+  /* Setup frequency range */
+  this->freq_range = osmosdr::freq_range_t( 300e6, 3.8e9 ) ;
+
+  /* Setup the LNA range */
+  this->lna_range = osmosdr::gain_range_t( 0, 6, 3 ) ;
+
+  /* Setup the VGA1/Mixer gain range */
+  this->vga1_range = osmosdr::gain_range_t( 2, 30 ) ;
+
+  /* Setup the VGA2 range */
+  this->vga2_range = osmosdr::gain_range_t( 0, 60, 3 ) ;
+
+  /* Open a handle to the free device */
+  this->dev = bladerf_open_any() ;
+  if( !dev ) {
+    throw std::runtime_error( std::string(__FUNCTION__) + " has failed to get a device .. any device!" ) ;
+  }
+
+/* Set the multiples for calls to this block to be 4096 samples */
+  this->set_output_multiple(4096) ;
 }
 
 /*
  * Our virtual destructor.
  */
-// TODO
 bladerf_source_c::~bladerf_source_c ()
 {
+  /* Close the device */
+  bladerf_close( this->dev ) ;
 }
 
-// TODO
+/* Main work function, pull samples from the driver */
 int bladerf_source_c::work( int noutput_items,
                         gr_vector_const_void_star &input_items,
                         gr_vector_void_star &output_items )
 {
+  /* Get a pointer for the output vector */
+  gr_complex *out = (gr_complex *)output_items[0] ;
 
+  /* TODO: Read this from the bladeRF device driver */
+  for( int i = 0 ; i < noutput_items ; ++i ) {
+    *out++ = gr_complex( (float)i, (float)-i ) ;
+  }
+
+  /* Source all the items */
+  //std::cout << "Sourced: " << noutput_items << " items" << std::endl ;
   return noutput_items;
 }
 
@@ -98,49 +131,91 @@ std::vector<std::string> bladerf_source_c::get_devices()
 
 size_t bladerf_source_c::get_num_channels()
 {
+  /* We only support a single channel for each bladeRF */
   return 1;
 }
 
-// TODO
 osmosdr::meta_range_t bladerf_source_c::get_sample_rates()
 {
-  osmosdr::meta_range_t range;
-  return range;
+  return this->sample_range;
 }
 
-// TODO
 double bladerf_source_c::set_sample_rate(double rate)
 {
-  return 0;
+  /* Set the Si5338 to be 2x this sample rate */
+  if( this->dev ) {
+    /* Check to see if the sample rate is an integer */
+    if( (uint32_t)round(rate) == (uint32_t)rate )
+    {
+        int ret ;
+        ret = bladerf_set_sample_rate( this->dev, (uint32_t)rate ) ;
+        if( ret ) {
+            throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set integer rate" ) ;
+        }
+    } else {
+        /* TODO: Fractional sample rate */
+        int ret ;
+        ret = bladerf_set_sample_rate( this->dev, (uint32_t)rate ) ;
+        if( ret ) {
+            throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set fractional rate" ) ;
+        }
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " has failed due to lack of device" );
+  }
+  return this->get_sample_rate();
 }
 
-// TODO
 double bladerf_source_c::get_sample_rate()
 {
-  return 0;
+  int ret ;
+  unsigned int rv ;
+
+  if( this->dev ) {
+    ret = bladerf_get_sample_rate( this->dev, &rv ) ;
+    if( ret ) {
+        throw std::runtime_error( std::string(__FUNCTION__) + " has failed to get sample rate" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " has failed due to lack of device" ) ;
+  }
+  return (double)rv;
 }
 
 // TODO
 osmosdr::freq_range_t bladerf_source_c::get_freq_range( size_t chan )
 {
-  osmosdr::freq_range_t range;
-
-  /* there is a (temperature dependent) gap between 1100 to 1250 MHz */
-  range += osmosdr::range_t( 52e6, 2.2e9 );
-
-  return range;
+  /* Frequency range of device */
+  return this->freq_range ;
 }
 
-// TODO
 double bladerf_source_c::set_center_freq( double freq, size_t chan )
 {
+  if( this->dev ) {
+    int ret ;
+    ret = bladerf_set_frequency( this->dev, TX, (uint32_t)freq ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " failed to set center frequency " ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failed due to lack of device" ) ;
+  } 
   return get_center_freq( chan );
 }
 
-// TODO
 double bladerf_source_c::get_center_freq( size_t chan )
 {
-  return 0;
+  uint32_t freq ;
+  int ret ;
+  if( this->dev ) {
+    ret = bladerf_get_frequency( this->dev, RX, &freq ) ;
+    if( ret ) {
+      throw std::runtime_error( std::string(__FUNCTION__) + " failed to read center frequency" ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failed to read center frequency due to lack of device" ) ;
+  }
+  return (double)freq;
 }
 
 // TODO
@@ -161,22 +236,31 @@ std::vector<std::string> bladerf_source_c::get_gain_names( size_t chan )
   std::vector< std::string > names;
 
   names += "LNA";
-  names += "IF";
+  names += "VGA2";
+  names += "VGA1";
 
   return names;
 }
 
-// TODO
+// TODO: Figure out if this is for VGA2 or what?
 osmosdr::gain_range_t bladerf_source_c::get_gain_range( size_t chan )
 {
-  osmosdr::gain_range_t range;
-  return range;
+  return this->vga2_range ;
 }
 
-// TODO
 osmosdr::gain_range_t bladerf_source_c::get_gain_range( const std::string & name, size_t chan )
 {
-  return get_gain_range( chan );
+  osmosdr::gain_range_t range ;
+  if( name == "LNA" ) {
+    range = this->lna_range ;
+  } else if( name == "VGA2" ) {
+    range = this->vga2_range ;
+  } else if( name == "VGA1" ) {
+    range = this->vga1_range ;
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " requested an invalid gain element " + name ) ;
+  }
+  return range ;
 }
 
 // TODO
@@ -191,37 +275,76 @@ bool bladerf_source_c::get_gain_mode( size_t chan )
   return false;
 }
 
-// TODO
+// TODO: Figure out if this is for VGA2 of what?
 double bladerf_source_c::set_gain( double gain, size_t chan )
 {
-  return get_gain( chan );
+  return set_gain( gain, "VGA2", chan );
 }
 
-// TODO
 double bladerf_source_c::set_gain( double gain, const std::string & name, size_t chan)
 {
-  return set_gain( gain, chan );
+  if( this->dev ) {
+    if( name == "LNA" ) {
+      enum bladerf_lna_gain g ;
+      if( gain == 0.0 ) {
+        g = LOW ;
+      } else if( gain == 3.0 ) {
+        g = MED ;
+      } else if( gain == 6.0 ) {
+        g = HIGH ;
+      } else {
+        std::cout << "Invalid LNA gain requested: " << gain << std::endl << "Setting to HIGH" << std::endl ;
+        g = HIGH ;
+      }
+      bladerf_set_lna_gain( this->dev, g ) ;
+    } else if( name == "VGA1" ) {
+      bladerf_set_rxvga1( this->dev, (int)gain ) ;
+    } else if( name == "VGA2" ) {
+      bladerf_set_rxvga2( this->dev, (int)gain ) ;
+    } else {
+      throw std::runtime_error( std::string(__FUNCTION__) + " requested an invalid gain element " + name ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failed due to not having a valid device open" ) ;
+  }
+  return get_gain( name, 1 ) ;
 }
 
-// TODO
+// TODO: Figure out if this is for VGA2 or what?
 double bladerf_source_c::get_gain( size_t chan )
 {
-  return 0;
+  return get_gain( "VGA2", chan ) ;
 }
 
 // TODO
 double bladerf_source_c::get_gain( const std::string & name, size_t chan )
 {
-  return get_gain( chan );
+  int g ;
+  if( this->dev ) {
+    if( name == "LNA" ) {
+        enum bladerf_lna_gain lna_g ;
+        bladerf_get_lna_gain( this->dev, &lna_g ) ;
+        g = lna_g == LOW ? 0 : lna_g == MED ? 3 : 6 ;
+    } else if( name == "VGA1" ) {
+        bladerf_get_rxvga1( this->dev, &g ) ;
+    } else if( name == "VGA2" ) {
+        bladerf_get_rxvga2( this->dev, &g ) ;
+    } else {
+      throw std::runtime_error( std::string(__FUNCTION__) + " requested to get the gain of an unknown gain element " + name ) ;
+    }
+  } else {
+    throw std::runtime_error( std::string(__FUNCTION__) + " failed due to not having a valid device open" ) ;
+  }
+  return (double)g ;
 }
 
-// TODO
+// TODO: Figure out if this is meant for VGA2 or what?
 double bladerf_source_c::set_if_gain(double gain, size_t chan)
 {
-  return gain;
+  return set_gain( gain, "VGA2", chan ) ;
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::vector< std::string > bladerf_source_c::get_antennas( size_t chan )
 {
   std::vector< std::string > antennas;
@@ -231,13 +354,13 @@ std::vector< std::string > bladerf_source_c::get_antennas( size_t chan )
   return antennas;
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::string bladerf_source_c::set_antenna( const std::string & antenna, size_t chan )
 {
   return get_antenna( chan );
 }
 
-// TODO
+// TODO: Figure out if this is right
 std::string bladerf_source_c::get_antenna( size_t chan )
 {
   return "RX";

@@ -75,7 +75,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
   this->set_output_multiple(4096);
 
   /* Open a device the device */
-  this->dev = bladerf_open_any( ) ;
+  this->dev = bladerf_open( "/dev/bladeRF1" ) ;
   if( !this->dev ) {
     std::runtime_error( std::string(__FUNCTION__) + " failed to open a device - any device!" ) ;
   }

@@ -22,6 +22,7 @@
 #ifndef INCLUDED_BLADERF_SOURCE_C_H
 #define INCLUDED_BLADERF_SOURCE_C_H
 
+#include <gr_block.h>
 #include <gr_sync_block.h>
 #include "osmosdr_src_iface.h"
 #include "bladerf_common.h"

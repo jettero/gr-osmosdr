@@ -87,13 +87,14 @@ bladerf_source_c::bladerf_source_c (const std::string &args)
   this->vga2_range = osmosdr::gain_range_t( 0, 60, 3 ) ;
 
   /* Open a handle to the free device */
-  this->dev = bladerf_open_any() ;
-  if( !dev ) {
+  this->dev = bladerf_open( "/dev/bladerf1" ) ;
+  if( NULL == this->dev ) {
     throw std::runtime_error( std::string(__FUNCTION__) + " has failed to get a device .. any device!" ) ;
   }
 
-/* Set the multiples for calls to this block to be 4096 samples */
-  this->set_output_multiple(4096) ;
+  /* Set the multiples for calls to this block to be 4096 samples */
+  this->set_output_multiple(1024) ;
+  this->set_max_noutput_items(1024) ;
 }
 
 /*
@@ -110,12 +111,31 @@ int bladerf_source_c::work( int noutput_items,
                         gr_vector_const_void_star &input_items,
                         gr_vector_void_star &output_items )
 {
-  /* Get a pointer for the output vector */
-  gr_complex *out = (gr_complex *)output_items[0] ;
+  if( this->dev ) {
+    /* Get a pointer for the output vector */
+    gr_complex *out = (gr_complex *)output_items[0] ;
 
-  /* TODO: Read this from the bladeRF device driver */
-  for( int i = 0 ; i < noutput_items ; ++i ) {
-    *out++ = gr_complex( (float)i, (float)-i ) ;
+    /* TODO: Read this from the bladeRF device driver */
+    int16_t *buf = (int16_t *)malloc(4096) ;
+    int16_t si, sq ;
+    for( int b = 0 ; b < (noutput_items/1024) ; ++b ) {
+      ssize_t len = bladerf_read_c16( this->dev, buf, 1024 ) ;
+      if( len != 4096 ) {
+        std::cout << "LENGTH " << len << " IS NOT 4096!!" << std::endl ;
+      }
+      //read(dev->fd, buf, 4096) ;
+      int16_t *s = buf ;
+      for( int i = 0 ; i < len ; ++i ) {
+        si = *s++ ; sq = *s++ ;
+        si &= 0xfff ; sq &= 0xfff ;
+        if( si & 0x800 ) si |= 0xf000 ;
+        if( sq & 0x800 ) sq |= 0xf000 ;
+        *out++ = gr_complex( (float)si * (1.0f/2048.0f), (float)sq * (1.0f/2048.0f) ) ;
+      }
+    }
+    free(buf) ;
+  } else {
+    std::cout << "Device is not open!" << std::endl ;
   }
 
   /* Source all the items */
@@ -148,14 +168,14 @@ double bladerf_source_c::set_sample_rate(double rate)
     if( (uint32_t)round(rate) == (uint32_t)rate )
     {
         int ret ;
-        ret = bladerf_set_sample_rate( this->dev, (uint32_t)rate ) ;
+        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate ) ;
         if( ret ) {
             throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set integer rate" ) ;
         }
     } else {
         /* TODO: Fractional sample rate */
         int ret ;
-        ret = bladerf_set_sample_rate( this->dev, (uint32_t)rate ) ;
+        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate ) ;
         if( ret ) {
             throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set fractional rate" ) ;
         }
@@ -172,7 +192,7 @@ double bladerf_source_c::get_sample_rate()
   unsigned int rv ;
 
   if( this->dev ) {
-    ret = bladerf_get_sample_rate( this->dev, &rv ) ;
+    ret = bladerf_get_sample_rate( this->dev, RX, &rv ) ;
     if( ret ) {
         throw std::runtime_error( std::string(__FUNCTION__) + " has failed to get sample rate" ) ;
     }
@@ -285,16 +305,16 @@ double bladerf_source_c::set_gain( double gain, const std::string & name, size_t
 {
   if( this->dev ) {
     if( name == "LNA" ) {
-      enum bladerf_lna_gain g ;
+      bladerf_lna_gain g ;
       if( gain == 0.0 ) {
-        g = LOW ;
+        g = LNA_BYPASS ;
       } else if( gain == 3.0 ) {
-        g = MED ;
+        g = LNA_MID ;
       } else if( gain == 6.0 ) {
-        g = HIGH ;
+        g = LNA_MAX ;
       } else {
-        std::cout << "Invalid LNA gain requested: " << gain << std::endl << "Setting to HIGH" << std::endl ;
-        g = HIGH ;
+        std::cout << "Invalid LNA gain requested: " << gain << std::endl << "Setting to LNA_MAX" << std::endl ;
+        g = LNA_MAX ;
       }
       bladerf_set_lna_gain( this->dev, g ) ;
     } else if( name == "VGA1" ) {
@@ -322,9 +342,9 @@ double bladerf_source_c::get_gain( const std::string & name, size_t chan )
   int g ;
   if( this->dev ) {
     if( name == "LNA" ) {
-        enum bladerf_lna_gain lna_g ;
+        bladerf_lna_gain lna_g ;
         bladerf_get_lna_gain( this->dev, &lna_g ) ;
-        g = lna_g == LOW ? 0 : lna_g == MED ? 3 : 6 ;
+        g = lna_g == LNA_BYPASS ? 0 : lna_g == LNA_MID ? 3 : 6 ;
     } else if( name == "VGA1" ) {
         bladerf_get_rxvga1( this->dev, &g ) ;
     } else if( name == "VGA2" ) {

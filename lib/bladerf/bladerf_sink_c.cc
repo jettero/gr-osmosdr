@@ -72,10 +72,11 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
   std::cout << "Hello world, from bladeRF sink!" << std::endl;
 
   /* Set the output multiple to be called */
-  this->set_output_multiple(4096);
+  this->set_output_multiple(1024);
+  this->set_max_noutput_items(1024);
 
   /* Open a device the device */
-  this->dev = bladerf_open( "/dev/bladeRF1" ) ;
+  this->dev = bladerf_open( "/dev/bladerf1" ) ;
   if( !this->dev ) {
     std::runtime_error( std::string(__FUNCTION__) + " failed to open a device - any device!" ) ;
   }
@@ -143,14 +144,16 @@ double bladerf_sink_c::set_sample_rate(double rate)
     if( (uint32_t)rate == rate ) {
       /* Integer sample rate */
       int ret ;
-      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate ) ;
+      uint32_t actual ;
+      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate, &actual ) ;
       if( ret ) {
         throw std::runtime_error( std::string(__FUNCTION__) + " failed to set sample rate" ) ;
       }
     } else {
       /* TODO: Fractional sample rate */
       int ret ;
-      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate ) ;
+      uint32_t actual ;
+      ret = bladerf_set_sample_rate( this->dev, TX, (uint32_t)rate, &actual ) ;
       if( ret ) {
         throw std::runtime_error( std::string(__FUNCTION__) + " failed to set fractional sample rate" ) ;
       }
@@ -158,7 +161,6 @@ double bladerf_sink_c::set_sample_rate(double rate)
   } else {
     throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
   }
-  printf( "bladeRF: set_sample_rate( %f )\n", rate ) ;
   return get_sample_rate();
 }
 

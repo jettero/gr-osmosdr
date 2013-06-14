@@ -168,14 +168,16 @@ double bladerf_source_c::set_sample_rate(double rate)
     if( (uint32_t)round(rate) == (uint32_t)rate )
     {
         int ret ;
-        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate ) ;
+        uint32_t actual ;
+        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate, &actual ) ;
         if( ret ) {
             throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set integer rate" ) ;
         }
     } else {
         /* TODO: Fractional sample rate */
         int ret ;
-        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate ) ;
+        uint32_t actual ;
+        ret = bladerf_set_sample_rate( this->dev, RX, (uint32_t)rate, &actual ) ;
         if( ret ) {
             throw std::runtime_error( std::string(__FUNCTION__) + " has failed to set fractional rate" ) ;
         }

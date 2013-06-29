@@ -97,6 +97,12 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
   /* Set the bandwidth range */
   this->bandwidths = osmosdr::freq_range_t( 1.5e6, 28e6 ) ;
 
+  /* Setup the actual device itself */
+  if( this->dev ) {
+    gpio_write( this->dev, 0x57 );
+    lms_spi_write( this->dev, 0x05, 0x3e );
+  }
+
 }
 
 /*
@@ -112,13 +118,25 @@ int bladerf_sink_c::work( int noutput_items,
                          gr_vector_const_void_star &input_items,
                          gr_vector_void_star &output_items )
 {
+  ssize_t ret;
   const gr_complex *in = (const gr_complex *) input_items[0];
+  int16_t *fixed = (int16_t *)malloc(sizeof(int16_t)*2*noutput_items) ;
+  int i ;
+  int16_t *p ;
   if( noutput_items < 1024 ) {
     std::cout << "Refusing to consume <1024: " << noutput_items << std::endl ;
     return 0 ;
   }
+  p = fixed ;
+  for( i = 0; i < noutput_items; i++ ) {
+    *p++ = 0xa000 | (int16_t)(real(*in)*2000);
+    *p++ = 0x5000 | (int16_t)(imag(*in)*2000);
+    in++;
+  }
   /* Consume all the output items */
+  ret = bladerf_send_c16( this->dev, fixed, noutput_items );
   //std::cout << "Consumed: " << noutput_items << " items" << std::endl ;
+  free(fixed);
   return noutput_items ;
 }
 
@@ -243,7 +261,7 @@ osmosdr::gain_range_t bladerf_sink_c::get_gain_range( size_t chan )
 }
 
 osmosdr::gain_range_t bladerf_sink_c::get_gain_range( const std::string & name, size_t chan )
-{ 
+{
   if( name == "VGA1" ) {
     return this->vga1_range ;
   } else if( name == "VGA2" ) {
@@ -316,7 +334,7 @@ double bladerf_sink_c::get_gain( const std::string & name, size_t chan )
     }
   } else {
     throw std::runtime_error( std::string(__FUNCTION__) + " failure due to device not being open" ) ;
-  } 
+  }
   return (double)gain ;
 }
 
@@ -360,7 +378,7 @@ double bladerf_sink_c::set_bandwidth( double bandwidth, size_t chan )
   if( this->dev ) {
     int ret ;
     uint32_t actual ;
-    
+
     ret = bladerf_set_bandwidth( this->dev, TX, (uint32_t)bandwidth, &actual ) ;
     if( ret ) {
       throw std::runtime_error( std::string(__FUNCTION__) + " could not get bandwidth due to driver error" ) ;

@@ -11,7 +11,7 @@
  *
  * GNU Radio is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *M` MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -109,12 +109,12 @@ public:
 private:
 
   bladerf *dev ;
-  osmosdr::meta_range_t sample_range ;
-  osmosdr::gain_range_t vga1_range ;
-  osmosdr::gain_range_t vga2_range ;
-  osmosdr::freq_range_t freq_range ;
-  osmosdr::freq_range_t bandwidths ;
-
+  osmosdr::meta_range_t sample_range;
+  osmosdr::gain_range_t vga1_range;
+  osmosdr::gain_range_t vga2_range;
+  osmosdr::freq_range_t freq_range;
+  osmosdr::freq_range_t bandwidths;
+//  gruel::thread thread;
 };
 
 #endif /* INCLUDED_BLADERF_SINK_C_H */

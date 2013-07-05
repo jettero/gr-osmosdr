@@ -73,7 +73,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
 
   /* Set the output multiple to be called */
   this->set_output_multiple(1024);
-  this->set_max_noutput_items(1024);
+  //this->set_max_noutput_items(1024);
 
   /* Open a device the device */
   this->dev = bladerf_open( "/dev/bladerf1" ) ;

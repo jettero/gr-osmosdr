@@ -22,14 +22,15 @@
 #ifndef INCLUDED_BLADERF_SOURCE_C_H
 #define INCLUDED_BLADERF_SOURCE_C_H
 
+#include <gruel/thread.h>
 #include <gr_block.h>
 #include <gr_sync_block.h>
+#include <osmosdr/osmosdr_ranges.h>
+#include <libbladeRF.h>
 #include "osmosdr_src_iface.h"
 #include "bladerf_common.h"
 
-#include <osmosdr/osmosdr_ranges.h>
 
-#include <libbladeRF.h>
 class bladerf_source_c;
 typedef struct bladerf_dev bladerf_dev_t;
 
@@ -114,13 +115,16 @@ private:
   std::string get_antenna( size_t chan = 0 );
 
 private:
+  static void read_task_dispatch(bladerf_source_c *obj);
+  void read_task();
+
   /* A handle to the device we wish to claim and use */
-  bladerf *dev ;
-  osmosdr::meta_range_t sample_range ;
-  osmosdr::freq_range_t freq_range ;
-  osmosdr::gain_range_t lna_range ;
-  osmosdr::gain_range_t vga2_range ;
-  osmosdr::gain_range_t vga1_range ;
+  gruel::thread thread;
+  osmosdr::meta_range_t sample_range;
+  osmosdr::freq_range_t freq_range;
+  osmosdr::gain_range_t lna_range;
+  osmosdr::gain_range_t vga2_range;
+  osmosdr::gain_range_t vga1_range;
 };
 
 #endif /* INCLUDED_BLADERF_SOURCE_C_H */

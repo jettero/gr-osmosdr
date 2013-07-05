@@ -22,8 +22,55 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <stdlib.h>
+#include <boost/lexical_cast.hpp>
 #include <libbladeRF.h>
 #include "bladerf_common.h"
+
+#define BLADERF_FIFO_SIZE_ENV   "BLADERF_SAMPLE_FIFO_SIZE"
+
+bladerf_common::bladerf_common() : running(true)
+{
+    const char *env_fifo_size;
+    size_t fifo_size;
+
+    raw_sample_buf = new int16_t[BLADERF_SAMPLE_BLOCK_SIZE];
+    if (!raw_sample_buf) {
+        throw std::runtime_error( std::string(__FUNCTION__) +
+                "has failed to allocate a raw sample buffer!" ) ;
+    }
+
+    env_fifo_size = getenv(BLADERF_FIFO_SIZE_ENV);
+    fifo_size = BLADERF_SAMPLE_FIFO_SIZE;
+
+    if (env_fifo_size != NULL) {
+        try {
+            fifo_size = boost::lexical_cast<size_t>(env_fifo_size);
+        } catch (const boost::bad_lexical_cast &e) {
+            std::cerr << "Warning: \"" << BLADERF_FIFO_SIZE_ENV
+                      << "\" is invalid" << "... defaulting to "
+                      << fifo_size;
+        }
+
+        if (fifo_size < BLADERF_SAMPLE_FIFO_MIN_SIZE) {
+            fifo_size = BLADERF_SAMPLE_FIFO_MIN_SIZE;
+            std::cerr << "Warning: \"" << BLADERF_FIFO_SIZE_ENV
+                      << "\" is too small" << "... defaulting to "
+                      << BLADERF_SAMPLE_FIFO_MIN_SIZE;
+        }
+    }
+
+    this->sample_fifo = new boost::circular_buffer<gr_complex>(fifo_size);
+    if (!this->sample_fifo)
+        throw std::runtime_error( std::string(__FUNCTION__) +
+                                    "has failed to allocate a sample FIFO!" ) ;
+}
+
+bladerf_common::~bladerf_common()
+{
+    delete[] raw_sample_buf;
+    delete sample_fifo;
+}
 
 std::vector< std::string > bladerf_common::devices()
 {
@@ -49,4 +96,16 @@ std::vector< std::string > bladerf_common::devices()
   }
 
   return ret;
+}
+
+bool bladerf_common::is_running()
+{
+  boost::shared_lock<boost::shared_mutex> lock(this->state_lock);
+  return this->running;
+}
+
+void bladerf_common::set_running(bool is_running)
+{
+  boost::unique_lock<boost::shared_mutex> lock(this->state_lock);
+  this->running = is_running;
 }

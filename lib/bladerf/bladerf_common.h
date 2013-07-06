@@ -31,6 +31,9 @@
 #include <gr_complex.h>
 #include <libbladeRF.h>
 
+/* We currently read/write 1024 samples (pairs of 16-bit signed ints) */
+#define BLADERF_SAMPLE_BLOCK_SIZE     (1024)
+
 /*
  * Default size of sample FIFO, in entries.
  * This can be overridden by the environment variable BLADERF_SAMPLE_FIFO_SIZE.
@@ -39,13 +42,7 @@
 #   define BLADERF_SAMPLE_FIFO_SIZE   (2 * 1024 * 1024)
 #endif
 
-/* We currently read/write 1024 samples (pairs of 16-bit signed ints) */
-#define BLADERF_SAMPLE_BLOCK_SIZE     (2 * 1024)
-#define BLADERF_SAMPLE_BLOCK_SIZE_BYTES \
-    (BLADERF_SAMPLE_BLOCK_SIZE * sizeof(int16_t))
-
-/* Minimum of 3 "blocks" of data from library */
-#define BLADERF_SAMPLE_FIFO_MIN_SIZE  (3 * 4096)
+#define BLADERF_SAMPLE_FIFO_MIN_SIZE  (3 * BLADERF_SAMPLE_BLOCK_SIZE)
 
 class bladerf_common
 {

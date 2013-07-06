@@ -118,9 +118,9 @@ void bladerf_source_c::read_task_dispatch(bladerf_source_c *obj)
 
 void bladerf_source_c::read_task()
 {
-  int16_t si, sq;
-  ssize_t n_samples_bytes;
-  size_t n_samples, n_avail, to_copy;
+  int16_t si, sq, *next_val;
+  ssize_t n_samples;
+  size_t n_avail, to_copy;
   bool source_running;
 
 
@@ -128,47 +128,53 @@ void bladerf_source_c::read_task()
 
     //std::cout << "Running task..." << std::endl;
 
-    /* FIXME This is going to change to n_samples (not bytes!) in a
-     * an upcoming fix to libbladeRF */
-    n_samples_bytes = bladerf_read_c16(this->dev, this->raw_sample_buf,
-                                       BLADERF_SAMPLE_BLOCK_SIZE_BYTES);
+    n_samples = bladerf_read_c16(this->dev, this->raw_sample_buf,
+                                 BLADERF_SAMPLE_BLOCK_SIZE);
 
-    if (n_samples_bytes < 0) {
+    if (n_samples < 0) {
       std::cerr << "Failed to read samples: "
-        << bladerf_strerror(n_samples_bytes) << std::endl;
-
+                << bladerf_strerror(n_samples) << std::endl;
       this->set_running(false);
-
     } else {
-
-      if (n_samples_bytes != BLADERF_SAMPLE_BLOCK_SIZE_BYTES) {
-        std::cerr << "Warning: received truncated sample block of "
-                  << n_samples << " bytes!"<< std::endl;
+      if (n_samples != BLADERF_SAMPLE_BLOCK_SIZE) {
+        if (n_samples > BLADERF_SAMPLE_BLOCK_SIZE) {
+            std::cerr << "Warning: received bloated sample block of "
+                      << n_samples << " bytes!"<< std::endl;
+        } else {
+            std::cerr << "Warning: received truncated sample block of "
+                      << n_samples << " bytes!"<< std::endl;
+        }
       } else {
 
-        /* Samples are interleaved I/Q Values, with a "sample" being a pair */
-        n_samples = n_samples_bytes / (2 * sizeof(int16_t));
         n_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
-        to_copy = (n_avail < n_samples ? n_avail : n_samples);
+        to_copy = (n_avail < (size_t)n_samples ? n_avail : (size_t)n_samples);
+        next_val = this->raw_sample_buf;
 
         this->sample_fifo_lock.lock();
 
         for (size_t i = 0; i < to_copy; ++i) {
+          si = *next_val++ & 0xfff;
+          sq = *next_val++ & 0xfff;
+
           /* Sign extend the 12-bit IQ values, if needed */
-          si &= 0xfff; sq &= 0xfff;
           if( si & 0x800 ) si |= 0xf000;
           if( sq & 0x800 ) sq |= 0xf000;
 
           gr_complex sample((float)si * (1.0f/2048.0f),
                             (float)sq * (1.0f/2048.0f));
+
           this->sample_fifo->push_back(sample);
         }
 
         this->sample_fifo_lock.unlock();
-        this->samples_available.notify_one();
+
+        /* We have made some new samples available to the consumer in work() */
+        if (to_copy) {
+            this->samples_available.notify_one();
+        }
 
         /* Indicate overrun, if neccesary */
-        if (to_copy < n_samples) {
+        if (to_copy < (size_t)n_samples) {
           std::cerr << "O";
         }
       }

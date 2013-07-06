@@ -34,7 +34,8 @@ bladerf_common::bladerf_common() : running(true)
     const char *env_fifo_size;
     size_t fifo_size;
 
-    this->raw_sample_buf = new int16_t[BLADERF_SAMPLE_BLOCK_SIZE];
+    /* 1 Sample = i,q (2 int16_t's) */
+    this->raw_sample_buf = new int16_t[2 * BLADERF_SAMPLE_BLOCK_SIZE];
     if (!raw_sample_buf) {
         throw std::runtime_error( std::string(__FUNCTION__) +
                 "has failed to allocate a raw sample buffer!" ) ;

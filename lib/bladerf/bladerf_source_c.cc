@@ -146,11 +146,12 @@ void bladerf_source_c::read_task()
         }
       } else {
 
-        n_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
-        to_copy = (n_avail < (size_t)n_samples ? n_avail : (size_t)n_samples);
         next_val = this->raw_sample_buf;
 
         this->sample_fifo_lock.lock();
+        n_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
+        to_copy = (n_avail < (size_t)n_samples ? n_avail : (size_t)n_samples);
+
 
         for (size_t i = 0; i < to_copy; ++i) {
           si = *next_val++ & 0xfff;

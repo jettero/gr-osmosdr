@@ -104,7 +104,7 @@ bladerf_source_c::bladerf_source_c (const std::string &args)
  */
 bladerf_source_c::~bladerf_source_c ()
 {
-  set_running(false);
+  this->set_running(false);
   this->thread.join();
 
   /* Close the device */
@@ -124,7 +124,7 @@ void bladerf_source_c::read_task()
   bool source_running;
 
 
-  while (is_running()) {
+  while (this->is_running()) {
 
     //std::cout << "Running task..." << std::endl;
 
@@ -137,7 +137,7 @@ void bladerf_source_c::read_task()
       std::cerr << "Failed to read samples: "
         << bladerf_strerror(n_samples_bytes) << std::endl;
 
-      set_running(false);
+      this->set_running(false);
 
     } else {
 
@@ -151,7 +151,7 @@ void bladerf_source_c::read_task()
         n_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
         to_copy = (n_avail < n_samples ? n_avail : n_samples);
 
-        sample_fifo_lock.lock();
+        this->sample_fifo_lock.lock();
 
         for (size_t i = 0; i < to_copy; ++i) {
           /* Sign extend the 12-bit IQ values, if needed */
@@ -164,8 +164,8 @@ void bladerf_source_c::read_task()
           sample_fifo->push_back(sample);
         }
 
-        sample_fifo_lock.unlock();
-        samples_available.notify_one();
+        this->sample_fifo_lock.unlock();
+        this->samples_available.notify_one();
 
         /* Indicate overrun, if neccesary */
         if (to_copy < n_samples) {
@@ -190,6 +190,7 @@ int bladerf_source_c::work( int noutput_items,
 
     /* Wait until we have the requested number of samples */
     n_samples_avail = this->sample_fifo->size();
+
     while (n_samples_avail < noutput_items) {
       this->samples_available.wait(lock);
       n_samples_avail = this->sample_fifo->size();
@@ -197,6 +198,7 @@ int bladerf_source_c::work( int noutput_items,
 
     for(int i = 0; i < noutput_items; ++i) {
       out[i] = this->sample_fifo->at(0);
+      this->sample_fifo->pop_front();
     }
   } else {
     std::cout << "Device is not open!" << std::endl;

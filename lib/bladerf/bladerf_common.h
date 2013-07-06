@@ -40,9 +40,9 @@
 #endif
 
 /* We currently read/write 1024 samples (pairs of 16-bit signed ints) */
-#define BLADERF_SAMPLE_BLOCK_SIZE     (1024)
+#define BLADERF_SAMPLE_BLOCK_SIZE     (2 * 1024)
 #define BLADERF_SAMPLE_BLOCK_SIZE_BYTES \
-    (BLADERF_SAMPLE_BLOCK_SIZE * 2 * sizeof(int16_t))
+    (BLADERF_SAMPLE_BLOCK_SIZE * sizeof(int16_t))
 
 /* Minimum of 3 "blocks" of data from library */
 #define BLADERF_SAMPLE_FIFO_MIN_SIZE  (3 * 4096)

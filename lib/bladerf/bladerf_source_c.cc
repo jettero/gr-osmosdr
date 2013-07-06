@@ -256,7 +256,7 @@ double bladerf_source_c::set_sample_rate(double rate)
 double bladerf_source_c::get_sample_rate()
 {
   int ret;
-  unsigned int rv;
+  unsigned int rv = -1;
 
   if( this->dev ) {
     ret = bladerf_get_sample_rate( this->dev, RX, &rv );

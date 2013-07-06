@@ -161,7 +161,7 @@ void bladerf_source_c::read_task()
 
           gr_complex sample((float)si * (1.0f/2048.0f),
                             (float)sq * (1.0f/2048.0f));
-          sample_fifo->push_back(sample);
+          this->sample_fifo->push_back(sample);
         }
 
         this->sample_fifo_lock.unlock();

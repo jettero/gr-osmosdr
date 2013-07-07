@@ -279,7 +279,7 @@ double bladerf_sink_c::get_sample_rate()
   uint32_t rate ;
   if( this->dev ) {
     int ret ;
-    ret = bladerf_get_sample_rate( this->dev, RX, &rate ) ;
+    ret = bladerf_get_sample_rate( this->dev, TX, &rate ) ;
     if( ret ) {
       throw std::runtime_error( std::string(__FUNCTION__) + " failed to get sample rate" ) ;
     }

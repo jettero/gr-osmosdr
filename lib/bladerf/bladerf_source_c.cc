@@ -292,7 +292,7 @@ double bladerf_source_c::set_center_freq( double freq, size_t chan )
 {
   if( this->dev ) {
     int ret;
-    ret = bladerf_set_frequency( this->dev, TX, (uint32_t)freq );
+    ret = bladerf_set_frequency( this->dev, RX, (uint32_t)freq );
     if( ret ) {
       throw std::runtime_error( std::string(__FUNCTION__)
               + " failed to set center frequency " );

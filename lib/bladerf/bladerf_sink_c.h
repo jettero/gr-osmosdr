@@ -11,7 +11,7 @@
  *
  * GNU Radio is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *M` MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -22,7 +22,11 @@
 #ifndef INCLUDED_BLADERF_SINK_C_H
 #define INCLUDED_BLADERF_SINK_C_H
 
-#include <gnuradio/gr_sync_block.h>
+#include <gruel/thread.h>
+#include <gr_block.h>
+#include <gr_sync_block.h>
+#include <osmosdr/osmosdr_ranges.h>
+#include <libbladeRF.h>
 #include "osmosdr_snk_iface.h"
 #include "bladerf_common.h"
 
@@ -108,13 +112,15 @@ public:
 
 private:
 
-  bladerf *dev ;
-  osmosdr::meta_range_t sample_range ;
-  osmosdr::gain_range_t vga1_range ;
-  osmosdr::gain_range_t vga2_range ;
-  osmosdr::freq_range_t freq_range ;
-  osmosdr::freq_range_t bandwidths ;
+  static void write_task_dispatch(bladerf_sink_c *obj);
+  void write_task();
 
+  gruel::thread thread;
+  osmosdr::meta_range_t sample_range;
+  osmosdr::gain_range_t vga1_range;
+  osmosdr::gain_range_t vga2_range;
+  osmosdr::freq_range_t freq_range;
+  osmosdr::freq_range_t bandwidths;
 };
 
 #endif /* INCLUDED_BLADERF_SINK_C_H */

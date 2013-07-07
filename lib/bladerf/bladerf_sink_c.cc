@@ -73,7 +73,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
 
   /* Set the output multiple to be called */
   this->set_output_multiple(1024);
-  this->set_max_noutput_items(1024);
+  //this->set_max_noutput_items(1024);
 
   /* Open a device the device */
   this->dev = bladerf_open( "/dev/bladerf1" ) ;
@@ -101,6 +101,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
   if( this->dev ) {
     gpio_write( this->dev, 0x57 );
     lms_spi_write( this->dev, 0x05, 0x3e );
+    this->thread = gruel::thread(write_task_dispatch, this);
   }
 
 }
@@ -110,33 +111,124 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
  */
 bladerf_sink_c::~bladerf_sink_c ()
 {
+  this->set_running(false);
+  this->thread.join();
+
   /* Close the device */
   bladerf_close( this->dev ) ;
+}
+
+void bladerf_sink_c::write_task_dispatch(bladerf_sink_c *obj)
+{
+  obj->write_task();
+}
+
+void bladerf_sink_c::write_task()
+{
+  int i, n_samples_avail, n_samples;
+  int16_t *p;
+  gr_complex sample;
+
+  while (this->is_running()) {
+    {
+      /* Lock the circular buffer */
+      boost::unique_lock<boost::mutex> lock(this->sample_fifo_lock);
+
+      /* Check to make sure we have samples available */
+      n_samples_avail = this->sample_fifo->size();
+      while( n_samples_avail < BLADERF_SAMPLE_BLOCK_SIZE ) {
+        /* Wait until there is at least a block size of samples ready */
+        this->samples_available.wait(lock);
+        n_samples_avail = this->sample_fifo->size();
+      }
+
+      /* Pop samples from circular buffer, write samples to outgoing buffer */
+      int16_t *p = this->raw_sample_buf;
+      for( i = 0 ; i < BLADERF_SAMPLE_BLOCK_SIZE ; ++i ) {
+        sample = this->sample_fifo->at(0);
+        this->sample_fifo->pop_front();
+        *p++ = 0xa000 | (int16_t)(real(sample)*2000);
+        *p++ = 0x5000 | (int16_t)(imag(sample)*2000);
+      }
+    } /* Give up the lock by leaving the scope ...*/
+
+    /* Notify that we've just popped some samples */
+    this->samples_available.notify_one();
+
+    /* Samples are available to write out */
+    n_samples = bladerf_send_c16(this->dev, this->raw_sample_buf,
+                                  BLADERF_SAMPLE_BLOCK_SIZE);
+
+    /* Check n_samples return value */
+    if( n_samples < 0 ) {
+      std::cerr << "Failed to write samples: "
+                << bladerf_strerror(n_samples) << std::endl;
+      this->set_running(false);
+    } else {
+      if(n_samples != BLADERF_SAMPLE_BLOCK_SIZE) {
+        if(n_samples > BLADERF_SAMPLE_BLOCK_SIZE) {
+          std::cerr << "Warning: sent bloated sample block of "
+                    << n_samples << " samples!" << std::endl;
+        } else {
+          std::cerr << "Warning: sent truncated sample block of "
+                    << n_samples << " samples!" << std::endl;
+        }
+      }
+    }
+  }
 }
 
 int bladerf_sink_c::work( int noutput_items,
                          gr_vector_const_void_star &input_items,
                          gr_vector_void_star &output_items )
 {
-  ssize_t ret;
+  int n_space_avail, to_copy, limit, i ;
   const gr_complex *in = (const gr_complex *) input_items[0];
-  int16_t *fixed = (int16_t *)malloc(sizeof(int16_t)*2*noutput_items) ;
-  int i ;
-  int16_t *p ;
-  if( noutput_items < 1024 ) {
-    std::cout << "Refusing to consume <1024: " << noutput_items << std::endl ;
-    return 0 ;
+
+  /* Check to make sure the device is open */
+  if( this->dev && this->is_running() && noutput_items >= 0 ) {
+    /* Total samples we want to process */
+    to_copy = noutput_items ;
+
+    /* While there are still samples to copy out ... */
+    while( to_copy > 0 ) {
+      {
+        /* Acquire the circular buffer lock */
+        boost::unique_lock<boost::mutex> lock(this->sample_fifo_lock);
+
+        /* Check to see how much space is available */
+        n_space_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
+
+        while (n_space_avail == 0) {
+          this->samples_available.wait(lock);
+          n_space_avail = this->sample_fifo->capacity() - this->sample_fifo->size();
+        }
+
+        /* Limit ourselves to either the number of output items ...
+           ... or whatever space is available */
+        limit = (n_space_avail < noutput_items ? n_space_avail : noutput_items);
+
+        /* Consume! */
+        for( i = 0; i < limit; i++ ) {
+          this->sample_fifo->push_back(*in++);
+        }
+
+        /* Decrement the amount we need to copy */
+        to_copy -= limit ;
+
+      } /* Unlock by leaving the scope */
+
+      /* Notify that we've just added some samples */
+      this->samples_available.notify_one();
+    }
+  } else {
+    if( !this->dev ) {
+      std::cout << "Device is not open!" << std::endl;
+      noutput_items = -1;
+    } else if( !this->is_running() ) {
+      noutput_items = 0;
+    }
   }
-  p = fixed ;
-  for( i = 0; i < noutput_items; i++ ) {
-    *p++ = 0xa000 | (int16_t)(real(*in)*2000);
-    *p++ = 0x5000 | (int16_t)(imag(*in)*2000);
-    in++;
-  }
-  /* Consume all the output items */
-  ret = bladerf_send_c16( this->dev, fixed, noutput_items );
-  //std::cout << "Consumed: " << noutput_items << " items" << std::endl ;
-  free(fixed);
   return noutput_items ;
 }
 
@@ -184,10 +276,10 @@ double bladerf_sink_c::set_sample_rate(double rate)
 
 double bladerf_sink_c::get_sample_rate()
 {
-  uint32_t rate ;
+  uint32_t rate = -1;
   if( this->dev ) {
     int ret ;
-    ret = bladerf_get_sample_rate( this->dev, RX, &rate ) ;
+    ret = bladerf_get_sample_rate( this->dev, TX, &rate ) ;
     if( ret ) {
       throw std::runtime_error( std::string(__FUNCTION__) + " failed to get sample rate" ) ;
     }

@@ -22,13 +22,50 @@
 #ifndef INCLUDED_BLADERF_COMMON_H
 #define INCLUDED_BLADERF_COMMON_H
 
+#include <boost/circular_buffer.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <vector>
 #include <string>
+#include <gr_complex.h>
+#include <libbladeRF.h>
+
+/* We currently read/write 1024 samples (pairs of 16-bit signed ints) */
+#define BLADERF_SAMPLE_BLOCK_SIZE     (1024)
+
+/*
+ * Default size of sample FIFO, in entries.
+ * This can be overridden by the environment variable BLADERF_SAMPLE_FIFO_SIZE.
+ */
+#ifndef BLADERF_SAMPLE_FIFO_SIZE
+#   define BLADERF_SAMPLE_FIFO_SIZE   (2 * 1024 * 1024)
+#endif
+
+#define BLADERF_SAMPLE_FIFO_MIN_SIZE  (3 * BLADERF_SAMPLE_BLOCK_SIZE)
 
 class bladerf_common
 {
+  public:
+    bladerf_common();
+    ~bladerf_common();
+
   protected:
     static std::vector< std::string > devices();
+    bool is_running();
+    void set_running(bool is_running);
+
+    bladerf *dev;
+
+    int16_t *raw_sample_buf;
+    boost::circular_buffer<gr_complex> *sample_fifo;
+    boost::mutex sample_fifo_lock;
+    boost::condition_variable samples_available;
+
+  private:
+    bool running;
+    boost::shared_mutex state_lock;
+
 };
 
 #endif

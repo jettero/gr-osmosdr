@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='ASCII'?>
 <flow_graph>
-  <timestamp>Wed Jul 18 20:58:31 2012</timestamp>
+  <timestamp>Wed Jul  3 23:19:18 2013</timestamp>
   <block>
     <key>options</key>
     <param>
@@ -348,61 +348,6 @@
     <key>variable_slider</key>
     <param>
       <key>id</key>
-      <value>freq</value>
-    </param>
-    <param>
-      <key>_enabled</key>
-      <value>True</value>
-    </param>
-    <param>
-      <key>label</key>
-      <value></value>
-    </param>
-    <param>
-      <key>value</key>
-      <value>394e6</value>
-    </param>
-    <param>
-      <key>min</key>
-      <value>50e6</value>
-    </param>
-    <param>
-      <key>max</key>
-      <value>2.2e9</value>
-    </param>
-    <param>
-      <key>num_steps</key>
-      <value>1000</value>
-    </param>
-    <param>
-      <key>style</key>
-      <value>wx.SL_HORIZONTAL</value>
-    </param>
-    <param>
-      <key>converver</key>
-      <value>float_converter</value>
-    </param>
-    <param>
-      <key>grid_pos</key>
-      <value></value>
-    </param>
-    <param>
-      <key>notebook</key>
-      <value></value>
-    </param>
-    <param>
-      <key>_coordinate</key>
-      <value>(229, 67)</value>
-    </param>
-    <param>
-      <key>_rotation</key>
-      <value>0</value>
-    </param>
-  </block>
-  <block>
-    <key>variable_slider</key>
-    <param>
-      <key>id</key>
       <value>gain</value>
     </param>
     <param>
@@ -525,7 +470,7 @@
     </param>
     <param>
       <key>args</key>
-      <value></value>
+      <value>bladerf=0</value>
     </param>
     <param>
       <key>nchan</key>
@@ -544,6 +489,10 @@
       <value>corr_ppm</value>
     </param>
     <param>
+      <key>iq_balance_mode0</key>
+      <value>0</value>
+    </param>
+    <param>
       <key>gain_mode0</key>
       <value>0</value>
     </param>
@@ -556,8 +505,16 @@
       <value>if_gain</value>
     </param>
     <param>
+      <key>bb_gain0</key>
+      <value>20</value>
+    </param>
+    <param>
       <key>ant0</key>
       <value></value>
+    </param>
+    <param>
+      <key>bw0</key>
+      <value>0</value>
     </param>
     <param>
       <key>freq1</key>
@@ -565,6 +522,10 @@
     </param>
     <param>
       <key>corr1</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>iq_balance_mode1</key>
       <value>0</value>
     </param>
     <param>
@@ -580,8 +541,16 @@
       <value>if_gain</value>
     </param>
     <param>
+      <key>bb_gain1</key>
+      <value>20</value>
+    </param>
+    <param>
       <key>ant1</key>
       <value></value>
+    </param>
+    <param>
+      <key>bw1</key>
+      <value>0</value>
     </param>
     <param>
       <key>freq2</key>
@@ -589,6 +558,10 @@
     </param>
     <param>
       <key>corr2</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>iq_balance_mode2</key>
       <value>0</value>
     </param>
     <param>
@@ -604,8 +577,16 @@
       <value>20</value>
     </param>
     <param>
+      <key>bb_gain2</key>
+      <value>20</value>
+    </param>
+    <param>
       <key>ant2</key>
       <value></value>
+    </param>
+    <param>
+      <key>bw2</key>
+      <value>0</value>
     </param>
     <param>
       <key>freq3</key>
@@ -613,6 +594,10 @@
     </param>
     <param>
       <key>corr3</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>iq_balance_mode3</key>
       <value>0</value>
     </param>
     <param>
@@ -628,8 +613,16 @@
       <value>20</value>
     </param>
     <param>
+      <key>bb_gain3</key>
+      <value>20</value>
+    </param>
+    <param>
       <key>ant3</key>
       <value></value>
+    </param>
+    <param>
+      <key>bw3</key>
+      <value>0</value>
     </param>
     <param>
       <key>freq4</key>
@@ -637,6 +630,10 @@
     </param>
     <param>
       <key>corr4</key>
+      <value>0</value>
+    </param>
+    <param>
+      <key>iq_balance_mode4</key>
       <value>0</value>
     </param>
     <param>
@@ -652,12 +649,75 @@
       <value>20</value>
     </param>
     <param>
+      <key>bb_gain4</key>
+      <value>20</value>
+    </param>
+    <param>
       <key>ant4</key>
       <value></value>
     </param>
     <param>
+      <key>bw4</key>
+      <value>0</value>
+    </param>
+    <param>
       <key>_coordinate</key>
       <value>(76, 324)</value>
+    </param>
+    <param>
+      <key>_rotation</key>
+      <value>0</value>
+    </param>
+  </block>
+  <block>
+    <key>variable_slider</key>
+    <param>
+      <key>id</key>
+      <value>freq</value>
+    </param>
+    <param>
+      <key>_enabled</key>
+      <value>True</value>
+    </param>
+    <param>
+      <key>label</key>
+      <value></value>
+    </param>
+    <param>
+      <key>value</key>
+      <value>1e9</value>
+    </param>
+    <param>
+      <key>min</key>
+      <value>300e6</value>
+    </param>
+    <param>
+      <key>max</key>
+      <value>2.2e9</value>
+    </param>
+    <param>
+      <key>num_steps</key>
+      <value>1000</value>
+    </param>
+    <param>
+      <key>style</key>
+      <value>wx.SL_HORIZONTAL</value>
+    </param>
+    <param>
+      <key>converver</key>
+      <value>float_converter</value>
+    </param>
+    <param>
+      <key>grid_pos</key>
+      <value></value>
+    </param>
+    <param>
+      <key>notebook</key>
+      <value></value>
+    </param>
+    <param>
+      <key>_coordinate</key>
+      <value>(229, 67)</value>
     </param>
     <param>
       <key>_rotation</key>

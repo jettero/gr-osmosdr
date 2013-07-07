@@ -21,6 +21,7 @@
  */
 #include <string>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <stdlib.h>
 #include <boost/lexical_cast.hpp>

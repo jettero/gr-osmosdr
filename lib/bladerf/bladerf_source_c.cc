@@ -32,6 +32,7 @@
 #include <boost/assign.hpp>
 #include <gnuradio/gr_io_signature.h>
 #include <osmosdr_arg_helpers.h>
+#include <libbladeRF.h>
 #include "bladerf_source_c.h"
 
 using namespace boost::assign;

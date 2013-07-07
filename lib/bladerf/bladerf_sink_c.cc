@@ -276,7 +276,7 @@ double bladerf_sink_c::set_sample_rate(double rate)
 
 double bladerf_sink_c::get_sample_rate()
 {
-  uint32_t rate ;
+  uint32_t rate = -1;
   if( this->dev ) {
     int ret ;
     ret = bladerf_get_sample_rate( this->dev, TX, &rate ) ;

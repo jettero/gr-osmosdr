@@ -74,6 +74,15 @@ bladerf_common::~bladerf_common()
     delete this->sample_fifo;
 }
 
+void bladerf_common::setup_device()
+{
+    gpio_write( this->dev, 0x57 );
+    lms_spi_write( this->dev, 0x05, 0x3e );
+    lms_spi_write( this->dev, 0x59, 0x21 );
+    lms_spi_write( this->dev, 0x64, 0x36 );
+    return;
+}
+
 std::vector< std::string > bladerf_common::devices()
 {
   int status;

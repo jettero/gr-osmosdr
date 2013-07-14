@@ -60,6 +60,7 @@ class bladerf_common
     int16_t *raw_sample_buf;
     boost::circular_buffer<gr_complex> *sample_fifo;
     boost::mutex sample_fifo_lock;
+    void setup_device();
     boost::condition_variable samples_available;
 
   private:

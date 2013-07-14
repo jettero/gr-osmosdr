@@ -85,18 +85,16 @@ bladerf_source_c::bladerf_source_c (const std::string &args)
   this->vga2_range = osmosdr::gain_range_t( 0, 60, 3 );
 
   /* Open a handle to the free device */
-  this->dev = bladerf_open( "/dev/bladerf1" );
+  /* TODO: Change this to handle multiple radios */
+  this->dev = bladerf_open( "/dev/bladerf0" );
   if( NULL == this->dev ) {
     throw std::runtime_error( std::string(__FUNCTION__)
             + " has failed to get a device .. any device!" );
   }
 
-  /* Set the multiples for calls to this block to be 4096 samples */
-  this->set_output_multiple(1024);
-  //this->set_max_noutput_items(1024);
-
   if (this->dev) {
-      this->thread = gruel::thread(read_task_dispatch, this);
+    this->setup_device();
+    this->thread = gruel::thread(read_task_dispatch, this);
   }
 }
 
@@ -269,6 +267,7 @@ double bladerf_source_c::get_sample_rate()
   unsigned int rv = -1;
 
   if( this->dev ) {
+    /* TODO: The library does not actually implement this currently */
     ret = bladerf_get_sample_rate( this->dev, RX, &rv );
     if( ret ) {
         throw std::runtime_error( std::string(__FUNCTION__)
@@ -281,7 +280,6 @@ double bladerf_source_c::get_sample_rate()
   return (double)rv;
 }
 
-// TODO
 osmosdr::freq_range_t bladerf_source_c::get_freq_range( size_t chan )
 {
   /* Frequency range of device */
@@ -292,10 +290,16 @@ double bladerf_source_c::set_center_freq( double freq, size_t chan )
 {
   if( this->dev ) {
     int ret;
-    ret = bladerf_set_frequency( this->dev, RX, (uint32_t)freq );
-    if( ret ) {
-      throw std::runtime_error( std::string(__FUNCTION__)
-              + " failed to set center frequency " );
+    /* Check frequency range */
+    if( freq < this->freq_range.start() || freq > this->freq_range.stop() ) {
+      std::cerr << "Failed to set out of bound frequency: "
+                << freq << std::endl;
+    } else {
+      ret = bladerf_set_frequency( this->dev, RX, (uint32_t)freq );
+      if( ret ) {
+        throw std::runtime_error( std::string(__FUNCTION__)
+                + " failed to set center frequency " );
+      }
     }
   } else {
     throw std::runtime_error( std::string(__FUNCTION__)
@@ -321,19 +325,19 @@ double bladerf_source_c::get_center_freq( size_t chan )
   return (double)freq;
 }
 
-// TODO
 double bladerf_source_c::set_freq_corr( double ppm, size_t chan )
 {
+  /* TODO: Write the VCTCXO with a correction value */
   return get_freq_corr( chan );
 }
 
 // TODO
 double bladerf_source_c::get_freq_corr( size_t chan )
 {
+  /* Return back the frequency correction in ppm */
   return 0;
 }
 
-// TODO
 std::vector<std::string> bladerf_source_c::get_gain_names( size_t chan )
 {
   std::vector< std::string > names;
@@ -348,6 +352,8 @@ std::vector<std::string> bladerf_source_c::get_gain_names( size_t chan )
 // TODO: Figure out if this is for VGA2 or what?
 osmosdr::gain_range_t bladerf_source_c::get_gain_range( size_t chan )
 {
+  /* TODO: This is an overall system gain range.  Given the LNA, VGA1 and VGA2
+  how much total gain can we have in the system */
   return this->vga2_range;
 }
 
@@ -368,21 +374,22 @@ bladerf_source_c::get_gain_range( const std::string & name, size_t chan )
   return range;
 }
 
-// TODO
 bool bladerf_source_c::set_gain_mode( bool automatic, size_t chan )
 {
+  /* TODO: Implement AGC in the FPGA */
   return false;
 }
 
-// TODO
 bool bladerf_source_c::get_gain_mode( size_t chan )
 {
+  /* TODO: Read back AGC mode */
   return false;
 }
 
 // TODO: Figure out if this is for VGA2 of what?
 double bladerf_source_c::set_gain( double gain, size_t chan )
 {
+  /* TODO: This is an overall system gain that has to be set */
   return set_gain( gain, "VGA2", chan );
 }
 
@@ -419,13 +426,12 @@ bladerf_source_c::set_gain( double gain, const std::string & name, size_t chan)
   return get_gain( name, 1 );
 }
 
-// TODO: Figure out if this is for VGA2 or what?
 double bladerf_source_c::get_gain( size_t chan )
 {
+  /* TODO: This is an overall system gain that has to be set */
   return get_gain( "VGA2", chan );
 }
 
-// TODO
 double bladerf_source_c::get_gain( const std::string & name, size_t chan )
 {
   int g;
@@ -449,30 +455,28 @@ double bladerf_source_c::get_gain( const std::string & name, size_t chan )
   return (double)g;
 }
 
-// TODO: Figure out if this is meant for VGA2 or what?
 double bladerf_source_c::set_if_gain(double gain, size_t chan)
 {
-  return set_gain( gain, "VGA2", chan );
+  /* This sets the overall system gain since we only have a single channel */
+  return set_gain( gain );
 }
 
-// TODO: Figure out if this is right
 std::vector< std::string > bladerf_source_c::get_antennas( size_t chan )
 {
+  /* We only have a singe receive chain here */
   std::vector< std::string > antennas;
-
   antennas += get_antenna( chan );
-
   return antennas;
 }
 
-// TODO: Figure out if this is right
 std::string bladerf_source_c::set_antenna( const std::string & antenna, size_t chan )
 {
+  /* We only have a single receive chain here */
   return get_antenna( chan );
 }
 
-// TODO: Figure out if this is right
 std::string bladerf_source_c::get_antenna( size_t chan )
 {
+  /* We only have a single receive chain here */
   return "RX";
 }

@@ -71,12 +71,8 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
 {
   std::cout << "Hello world, from bladeRF sink!" << std::endl;
 
-  /* Set the output multiple to be called */
-  this->set_output_multiple(1024);
-  //this->set_max_noutput_items(1024);
-
   /* Open a device the device */
-  this->dev = bladerf_open( "/dev/bladerf1" ) ;
+  this->dev = bladerf_open( "/dev/bladerf0" ) ;
   if( !this->dev ) {
     std::runtime_error( std::string(__FUNCTION__) + " failed to open a device - any device!" ) ;
   }
@@ -99,8 +95,7 @@ bladerf_sink_c::bladerf_sink_c (const std::string &args)
 
   /* Setup the actual device itself */
   if( this->dev ) {
-    gpio_write( this->dev, 0x57 );
-    lms_spi_write( this->dev, 0x05, 0x3e );
+    this->setup_device();
     this->thread = gruel::thread(write_task_dispatch, this);
   }
 
